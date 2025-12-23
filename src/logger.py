@@ -1,5 +1,6 @@
-import time
 import threading
+import time
+
 
 # Mã màu ANSI
 class Color:
@@ -11,6 +12,7 @@ class Color:
     MAGENTA = "\033[95m"
     CYAN = "\033[96m"
     WHITE = "\033[97m"
+
 
 class Logger:
     LEVELS = {
@@ -48,6 +50,7 @@ class Logger:
 
     def error(self, msg):
         self._log("ERROR", msg)
+
 
 # Singleton
 logger = Logger()
