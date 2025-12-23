@@ -1,23 +1,19 @@
-import csv
 import threading
 import time
+from random import uniform
 from enum import Enum, auto
 from queue import Queue
-from random import uniform
-
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from tqdm import tqdm
-
+from selenium.webdriver.support import expected_conditions as EC
 from logger import logger
+import csv
 
 URL = "https://vietnamnet.vn/giao-duc/diem-thi/tra-cuu-diem-thi-tot-nghiep-thpt"
 NUM_TINH = 64
 stop_event = threading.Event()
-
 
 # ================= ENUM =================
 class Feedback(Enum):
@@ -25,11 +21,9 @@ class Feedback(Enum):
     SKIP = auto()
     NEXT = auto()
 
-
 # ================= SBD =================
 def format_sbd(tinh, cum, so):
     return f"{tinh:02d}{cum:02d}{so:04d}"
-
 
 def sbd_generator(start_tinh, end_tinh):
     for tinh in range(start_tinh, end_tinh + 1):
@@ -45,7 +39,6 @@ def sbd_generator(start_tinh, end_tinh):
             if skip_tinh:
                 break
 
-
 # ================= DRIVER =================
 def setup_driver():
     opts = Options()
@@ -58,7 +51,6 @@ def setup_driver():
     opts.add_argument("--disable-background-networking")
     opts.add_argument("--blink-settings=imagesEnabled=false")
     return webdriver.Chrome(options=opts)
-
 
 # ================= FETCH =================
 def fetch_data(thread_id, driver, sbd, retry=3):
@@ -74,28 +66,25 @@ def fetch_data(thread_id, driver, sbd, retry=3):
             search_input.send_keys(sbd)
             search_button.submit()
             time.sleep(uniform(0.3, 0.6))
-
+            
             popup = driver.find_elements(By.CSS_SELECTOR, "img.close__popupMessage")
             if popup:
                 popup[0].click()
                 logger.warning(f"[SKIP] {sbd}")
                 return None, Feedback.SKIP
-
+            
             # đợi year
             year_elem = wait.until(EC.presence_of_element_located((By.ID, "year")))
             year = year_elem.get_attribute("year")
 
             # đợi edu
-            edu_elem = wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "p.edu-institution"))
-            )
+            edu_elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "p.edu-institution")))
             edu = edu_elem.text
 
             tbody = driver.find_element(By.TAG_NAME, "tbody")
             rows = tbody.find_elements(By.TAG_NAME, "tr")
             data = [
-                [year, edu, sbd]
-                + [td.text for td in row.find_elements(By.XPATH, "./*")]
+                [year, edu, sbd] + [td.text for td in row.find_elements(By.XPATH, "./*")]
                 for row in rows
             ]
 
@@ -108,10 +97,9 @@ def fetch_data(thread_id, driver, sbd, retry=3):
 
     return None, Feedback.STOP
 
-
 # ================= FETCHER =================
-def fetcher(thread_id, driver, gen_sbd, result_queue, pbar):
-    print(f"🚀 Thread {thread_id:02d} đã được khởi động")
+def fetcher(thread_id, driver, gen_sbd, result_queue):
+    print(f"🚀 Thread {thread_id:02d} đã được khởi động")  # thông báo khởi động
     driver.get(URL)
     try:
         current_sbd = next(gen_sbd)
@@ -119,34 +107,25 @@ def fetcher(thread_id, driver, gen_sbd, result_queue, pbar):
         while not stop_event.is_set():
             data, status = fetch_data(thread_id, driver, current_sbd)
 
-            # Cập nhật progress bar cho mỗi SBD đã thử xử lý
-            pbar.update(1)
-
             if status is Feedback.NEXT:
                 skip_count = 0
-
+                
             if status is Feedback.SKIP:
                 skip_count += 1
                 status = Feedback.NEXT
-
+            
             if skip_count >= 3:
                 status = Feedback.SKIP
-
-            # Gửi feedback về generator
+                
             current_sbd = gen_sbd.send(status)
             if data:
                 result_queue.put(data)
     except StopIteration:
         logger.info(f"[Fetcher-{thread_id}] DONE")
-        # nhảy đầy thanh tiến trình khi generator kết thúc
-        remaining = pbar.total - pbar.n
-        if remaining > 0:
-            pbar.update(remaining)
     finally:
+        # gửi sentinel báo thread kết thúc
         result_queue.put(None)
-        pbar.close()
         driver.quit()
-
 
 # ================= SAVER =================
 def saver(result_queue, num_fetcher, output_file="results.csv"):
@@ -162,19 +141,19 @@ def saver(result_queue, num_fetcher, output_file="results.csv"):
         # Ghi dữ liệu vào CSV
         with open(output_file, mode="a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-
+            
             if first_write:
                 # ghi header từ keys nếu có hoặc tự đặt
                 header = ["Year", "Edu", "SBD", "Subject", "Score"]
                 writer.writerow(header)
                 first_write = False
-
+            
             for row in item:
                 writer.writerow(row)
                 logger.info(f"[SAVE] {row}")
 
-
 def monitor_input():
+
     helper_text = """
 HỆ THỐNG GIÁM SÁT LỆNH NGƯỜI DÙNG
 ---------------------------------
@@ -188,7 +167,7 @@ N       : Tiếp tục hệ thống
     while not stop_event.is_set():
         try:
             user_input = input("Nhập lệnh [Y/N]: ").strip().upper()
-
+            
             if user_input == "Y":
                 print("Lệnh dừng hệ thống được kích hoạt!")
                 stop_event.set()
@@ -199,7 +178,7 @@ N       : Tiếp tục hệ thống
                 print(helper_text)
             else:
                 print("Lệnh không hợp lệ. Nhập '--help' để được hướng dẫn.")
-
+        
         except EOFError:
             # Trường hợp terminal bị đóng hoặc Ctrl+D
             print("\nInput bị gián đoạn, tự động dừng hệ thống.")
@@ -223,6 +202,7 @@ def orchestrator_system(num_driver):
     threads = []
     current = 1
 
+    # tạo fetcher thread
     for i, driver in enumerate(drivers, 1):
         size = base + (1 if i <= remainder else 0)
         start = current
@@ -230,21 +210,11 @@ def orchestrator_system(num_driver):
         current = end + 1
 
         gen = sbd_generator(start, end)
-        total_sbd_thread = (
-            (end - start + 1) * 20 * 10000
-        )  # tổng số SBD thread này phụ trách
-
-        # Tạo progress bar cho thread
-        pbar = tqdm(
-            total=total_sbd_thread, desc=f"Fetcher-{i:02d}", position=i, leave=True
-        )
-
-        t = threading.Thread(
-            target=fetcher, args=(i, driver, gen, result_queue, pbar), daemon=True
-        )
+        t = threading.Thread(target=fetcher, args=(i, driver, gen, result_queue), daemon=True)
         t.start()
+        
         threads.append(t)
-
+    
     # tạo saver thread
     saver_thread = threading.Thread(target=saver, args=(result_queue, num_driver))
     saver_thread.start()
@@ -258,7 +228,6 @@ def orchestrator_system(num_driver):
 
     saver_thread.join()
     logger.info("🎉 HOÀN THÀNH TOÀN BỘ")
-
 
 # ================= MAIN =================
 if __name__ == "__main__":
