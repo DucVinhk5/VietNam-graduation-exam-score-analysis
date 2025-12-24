@@ -4,6 +4,7 @@ from db.schema import init_db
 from logger import logger
 
 BATCH_SIZE = 500
+VALID_SIZE = 5
 
 
 def saver(result_queue, num_fetcher):
@@ -26,13 +27,23 @@ def saver(result_queue, num_fetcher):
             logger.error(f"[DB ERROR] {e}")
 
     while finished < num_fetcher:
-        item = result_queue.get()
+        items = result_queue.get()
 
-        if item is None:
+        if items is None:
             finished += 1
             continue
 
-        buffer.extend(item)
+        valid_items = [item for item in items if len(item) == VALID_SIZE]
+        if not valid_items:
+            logger.warning("[DATA WARNING] - No valid item")
+            continue
+        
+        if len(valid_items) < len(items):
+            sbd = valid_items[0][2]
+            logger.warning(
+                f"[DATA WARNING] {sbd} - Invalid item size: {len(items)}, expected {VALID_SIZE}"
+            )
+        buffer.extend(valid_items)
 
         if len(buffer) >= BATCH_SIZE:
             flush()

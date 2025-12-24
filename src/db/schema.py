@@ -11,11 +11,11 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            year TEXT,
+            year INTEGER,
             edu TEXT,
             sbd TEXT,
             subject TEXT,
-            score TEXT,
+            score REAL,
             UNIQUE(sbd, subject)
         )
     """)

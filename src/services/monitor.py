@@ -14,6 +14,7 @@ N       : Tiếp tục hệ thống
 
     while not stop_event.is_set():
         try:
+            print("Bạn có muốn dựng toàn bộ hệ thống ?")
             user_input = input("Nhập lệnh [Y/N]: ").strip().upper()
 
             if user_input == "Y":

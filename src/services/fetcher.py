@@ -1,6 +1,7 @@
 import time
 from random import uniform
 
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -12,9 +13,10 @@ from utils.stop import stop_event
 
 
 def fetch_data(thread_id, driver, sbd, retry=3):
+    wait = WebDriverWait(driver, 5)
     for attempt in range(1, retry + 1):
         try:
-            wait = WebDriverWait(driver, 5)
+            # Input & submit
             search_input = wait.until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "input.input-search"))
             )
@@ -23,14 +25,21 @@ def fetch_data(thread_id, driver, sbd, retry=3):
             search_input.clear()
             search_input.send_keys(sbd)
             search_button.submit()
-            time.sleep(uniform(0.3, 0.6))
 
-            popup = driver.find_elements(By.CSS_SELECTOR, "img.close__popupMessage")
-            if popup:
-                popup[0].click()
+            # ---- HANDLE POPUP (nếu có) ----
+            try:
+                popup = WebDriverWait(driver, 2).until(
+                    EC.element_to_be_clickable(
+                        (By.CSS_SELECTOR, "img.close__popupMessage")
+                    )
+                )
+                popup.click()
                 logger.warning(f"[SKIP] {sbd}")
                 return None, Feedback.SKIP
+            except TimeoutException:
+                pass  # không có popup → tiếp tục
 
+            # ---- FETCH DATA ----
             year = wait.until(
                 EC.presence_of_element_located((By.ID, "year"))
             ).get_attribute("year")
@@ -39,9 +48,9 @@ def fetch_data(thread_id, driver, sbd, retry=3):
                 EC.presence_of_element_located((By.CSS_SELECTOR, "p.edu-institution"))
             ).text
 
-            rows = driver.find_element(By.TAG_NAME, "tbody").find_elements(
-                By.TAG_NAME, "tr"
-            )
+            rows = wait.until(
+                EC.presence_of_element_located((By.TAG_NAME, "tbody"))
+            ).find_elements(By.TAG_NAME, "tr")
 
             data = [
                 [year, edu, sbd]
@@ -69,6 +78,9 @@ def fetcher(thread_id, driver, gen_sbd, result_queue):
 
         while not stop_event.is_set():
             data, status = fetch_data(thread_id, driver, current_sbd)
+
+            if status is Feedback.NEXT:
+                skip_count = 0
 
             if status is Feedback.SKIP:
                 skip_count += 1
