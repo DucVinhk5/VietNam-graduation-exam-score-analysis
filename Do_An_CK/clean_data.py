@@ -55,12 +55,15 @@ print(values)
 # 1. Làm sạch tên cột (loại bỏ khoảng trắng thừa)
 df.columns = df.columns.str.strip()
 
-# 2. Danh sách các giá trị cần giữ lại
+# 2. Lọc theo cột 'Ghi chú'
 target_groups = ['Thang điểm 30', 'Nhóm 1', 'Nhóm 2', 'Nhóm 3']
+df_filtered = df[df['Ghi chú'].isin(target_groups) | df['Ghi chú'].isna()].copy()
 
-# 3. Lọc các dòng:
-# Giữ lại nếu 'Ghi chú' thuộc danh sách target_groups HOẶC là NaN (ô trống)
-df_final = df[df['Ghi chú'].isin(target_groups) | df['Ghi chú'].isna()].copy()
+# 3. Chuyển cột 'Điểm chuẩn' sang dạng số để so sánh
+df_filtered['Điểm chuẩn'] = pd.to_numeric(df_filtered['Điểm chuẩn'], errors='coerce')
 
-# 4. Xuất ra file CSV mới
-df_final.to_csv('Diem_Chuan_THPT_cleaned.csv', index=False, encoding='utf-8-sig')
+# 4. Xóa tất cả các dòng có điểm chuẩn > 30 (điểm Thi đánh giá năng lược)
+df_final = df_filtered[df_filtered['Điểm chuẩn'] <= 30].copy()
+
+# 5. Xuất file CSV
+df_final.to_csv('Diem_Chuan_Cleand.csv', index=False, encoding='utf-8-sig')
