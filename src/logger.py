@@ -1,5 +1,4 @@
 import threading
-import time
 
 
 # Mã màu ANSI
@@ -31,10 +30,9 @@ class Logger:
 
     def _log(self, level, msg):
         if Logger.LEVELS[level]["priority"] >= Logger.LEVELS[self.level]["priority"]:
-            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             color = Logger.LEVELS[level]["color"] if self.use_color else ""
             reset = Color.RESET if self.use_color else ""
-            log_line = f"{color}[{level}] {timestamp} | {msg}{reset}\n"
+            log_line = f"{color}[{level}] | {msg}{reset}\n"
             with Logger._lock:
                 with open(self.filename, "a", encoding="utf-8") as f:
                     f.write(log_line)

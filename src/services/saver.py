@@ -4,7 +4,7 @@ from db.schema import init_db
 from logger import logger
 
 BATCH_SIZE = 500
-VALID_SIZE = 5
+VALID_SIZE = 4
 
 
 def saver(result_queue, num_fetcher):

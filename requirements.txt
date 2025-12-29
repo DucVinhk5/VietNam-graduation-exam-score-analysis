@@ -1,7 +1,4 @@
 selenium
-beautifulsoup4
-requests
-aiohttp
 pandas
-lxml
-tdqm
+matplotlib
+seaborn

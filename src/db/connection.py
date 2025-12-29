@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_PATH = "results.db"
+DB_PATH = "diem_thpt_quoc_gia.db"
 
 
 def get_connection():

@@ -5,11 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.13.2",
-    "beautifulsoup4>=4.14.3",
+    "ipykernel>=7.1.0",
     "lxml>=6.0.2",
+    "matplotlib>=3.10.8",
     "pandas>=2.3.3",
-    "requests>=2.32.5",
+    "seaborn>=0.13.2",
     "selenium>=4.39.0",
-    "tdqm>=0.0.1",
 ]

@@ -9,7 +9,7 @@ def init_db():
     cursor.execute("PRAGMA synchronous=NORMAL;")
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS results (
+        CREATE TABLE IF NOT EXISTS Diem_THPT_QuocGia (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             year INTEGER,
             edu TEXT,

@@ -4,7 +4,7 @@ from random import uniform
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.wait import WebDriverWait
 
 from config.settings import URL
 from core.enums import Feedback
@@ -44,16 +44,12 @@ def fetch_data(thread_id, driver, sbd, retry=3):
                 EC.presence_of_element_located((By.ID, "year"))
             ).get_attribute("year")
 
-            edu = wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "p.edu-institution"))
-            ).text
-
             rows = wait.until(
                 EC.presence_of_element_located((By.TAG_NAME, "tbody"))
             ).find_elements(By.TAG_NAME, "tr")
 
             data = [
-                [year, edu, sbd]
+                [year, sbd]
                 + [td.text for td in row.find_elements(By.XPATH, "./*")]
                 for row in rows
             ]
@@ -61,8 +57,8 @@ def fetch_data(thread_id, driver, sbd, retry=3):
             logger.info(f"[OK] {sbd}")
             return data, Feedback.NEXT
 
-        except Exception as e:
-            logger.error(f"[Thread-{thread_id}] Retry {attempt} {sbd} - {e}")
+        except Exception:
+            logger.error(f"[Thread-{thread_id}] Retry {attempt} {sbd}")
             time.sleep(uniform(0.5, 1))
 
     return None, Feedback.STOP
